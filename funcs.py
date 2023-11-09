@@ -1,8 +1,10 @@
 from urllib.request import urlopen
 from urllib.error import HTTPError
-
 import json
 import config # Config not included for token anonymity
+from datetime import datetime
+import math
+
 
 def parseJSON(url):
     response = urlopen(url)   
@@ -54,3 +56,41 @@ def returnAllMessages(group_id,msg_id = '0'):
             return messages
         else:   
             return []
+
+def printGroups(groups_num,page,groups):
+    print("\n           Showing page " + str(page) + " of " + str(math.ceil(groups_num/10)))
+    print("--------------------------------------------")
+    
+    if groups_num - ((page-1)*10) < 10:
+        for i in range(0,groups_num - ((page-1)*10)):
+            print("[" + str(i) + "] : " + groups[i+(page-1)*10]['name'])
+    else:
+        for i in range(0,10):
+            print("[" + str(i) + "] : " + groups[i+(page-1)*10]['name'])
+            
+    print("--------------------------------------------")
+    print("    [P]revious page    |    [N]ext page")
+
+def groupWrite(group_id):
+    group_response = returnGroup(group_id)
+    print("Retrieving messages from GroupMe API......")
+    message_all = returnAllMessages(group_id)
+
+
+    group_name = group_response["name"]
+    invalid = '/\:*?\"<>|'
+    for char in invalid:
+        group_name = group_name.replace(char,'') # Clean file name of illegal windows chars.
+
+    message_output = open(group_name + '.txt','wb')
+
+    print("Writing to " + group_name + ".txt ...")
+
+    for i in reversed(message_all):
+        date_i = datetime.fromtimestamp(i["created_at"])
+        sender_i = i["name"]
+        message_i = i["text"]
+        line_out = str(date_i) + "[" + str(sender_i) + "] : " + str(message_i) + '\n'
+        message_output.write(line_out.encode('utf8'))
+
+    message_output.close()
